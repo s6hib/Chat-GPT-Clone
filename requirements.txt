@@ -1,0 +1,6 @@
+Flask==2.0.1
+transformers==4.10.3
+torch==1.9.1
+numpy==1.21.2
+requests==2.26.0
+openai==0.27.0
