@@ -2,6 +2,8 @@
 
 This repository contains the code for a simplified version of OpenAI's GPT-3 powered chatbot. It has been designed to mimic the language processing capabilities of the official ChatGPT.
 
+https://chat-gpt-clone.s6hib.repl.co/
+
 ## Features
 
 1. ChatGPT Clone responds to prompts entered by users.
