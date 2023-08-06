@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 import openai
 import os
 
@@ -6,8 +6,8 @@ my_secret = os.environ['OPENAI_API_KEY']
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# Set secret key for sessions
-app.secret_key = 'supersecretkey'
+# Global dictionary to store conversation history
+conv_history = {}
 
 
 @app.route('/')
@@ -19,33 +19,48 @@ def home():
 def message():
   data = request.get_json()
   user_message = data['message']
+  session_id = request.remote_addr  # Using the remote IP address as the identifier
 
-  # If 'chat_history' not in session, create a new list
-  if 'chat_history' not in session:
-    session['chat_history'] = [{
-      "role": "system",
-      "content": "You are a helpful assistant."
-    }]
+  # Check if there's history for this session
+  if session_id not in conv_history:
+    conv_history[session_id] = []
 
   # Append the user's message to the chat history
-  session['chat_history'].append({"role": "user", "content": user_message})
+  conv_history[session_id].append({"role": "user", "content": user_message})
 
-  response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
-                                          messages=session['chat_history'])
-
-  # Get AI's message
-  ai_message = response['choices'][0]['message']['content']
+  # Generate AI's response
+  ai_message = generate_response(user_message)
 
   # Append the AI's message to the chat history
-  session['chat_history'].append({"role": "assistant", "content": ai_message})
+  conv_history[session_id].append({"role": "assistant", "content": ai_message})
 
   return jsonify({'message': ai_message})
 
 
+def generate_response(query):
+  session_id = request.remote_addr
+  # Start with a system message
+  messages = [{
+    "role":
+    "system",
+    "content":
+    "You are a helpful assistant, ready to provide information and assist with various tasks."
+  }]
+  # Add the conversation history for this session
+  messages.extend([{
+    "role": msg["role"],
+    "content": msg["content"]
+  } for msg in conv_history[session_id]])
+  response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
+                                          messages=messages)
+  return response['choices'][0]['message']['content']
+
+
 @app.route('/get_history', methods=['GET'])
 def get_history():
-  if 'chat_history' in session:
-    return jsonify({'history': session['chat_history']})
+  session_id = request.remote_addr
+  if session_id in conv_history:
+    return jsonify({'history': conv_history[session_id]})
   else:
     return jsonify({'history': []})
 
